@@ -25,5 +25,15 @@ class PIDController:
         elif output > 100:
             output = 100
 
-        return output
+        return 
+
+    @staticmethod
+    def calc_angle_error(target, cur):
+        error = target - cur
+        if (abs(error) > (180 + 180)/2):
+            if (error > 0):
+                error -=(180+180)
+            else:
+                error += (180+180)
+        return error
 

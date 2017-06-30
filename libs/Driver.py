@@ -7,6 +7,7 @@ import numpy as np
 import tempfile
 import time
 import threading
+from PIDController import *
 plt.figure(figsize=(4, 3), dpi = 80)
 plt.xlabel('x')
 plt.ylabel('y')
@@ -94,9 +95,8 @@ class Point(object):
         print "dist", x_distance, y_distance
         target_angle = (((((math.atan2(y_distance, x_distance)) * 180/math.pi))+180)% 360) - 180
         cur_angle = ((self.gyro.get_angle()+180)%360)-180
-        print 'target',target_angle, 'cur', cur_angle
-        error = target_angle - cur_angle
-        error = ((error+180)%360)-180
+        print 'target', target_angle, 'cur', cur_angle
+        error = PIDController.calc_angle_error(target_angle, cur_angle)
         print error
 
         output = self.turnPID.run(error)
