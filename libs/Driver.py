@@ -189,5 +189,49 @@ class Driver(object):
         #self.drive_straight(0)
         self.mapper.step()
 
+class PIDMotor(object):
+    def __init__(self, motor, velocityPID, positionPID):
+        self.motor = motor
+        self.velocityPID = velocityPID
+        self.positionPID = positionPID
+
+        self.startPos = self.motor.pos()
+        self.prevPos = self.motor.startPos
+        self.prevTime = datetime.datetime.now()
+        self.setPoint = 0
+        self.mode = 0 # position, velocity
+        self.feedforward = 0
+
+    def resetPosition(self):
+        self.startPos = self.motor.pos()
+    
+    def setPosition(self, position):
+        self.mode = 0
+        self.setPoint = position
+
+    def setVelocity(self, velocity, F=0):
+        self.mode = 1
+        self.setPoint = velocity
+        self.feedforward = F
+
+    def run(self):
+        if (self.mode == 0):
+            error = self.motor.pos() - self.startPos() - self.setPoint
+            if abs(error) > 1000:
+                return
+            output = self.positionPID.calc(error)
+        else:
+            velocity = float(self.motor.pos() - self.prevPos)/((datetime.datetime.now - self.prevTime).to_seconds())
+            error = velocity - self.setPoint
+            self.prevTime = datetime.datetime.now()
+            self.prevPos = self.motor.pos()
+            if (abs(error) > 1000):
+                return
+            else:
+                output = self.velocityPID.calc(error) + self.feedforward * self.setPoint
+
+        self.motor.setSpeed(output)
+
+
 
         
