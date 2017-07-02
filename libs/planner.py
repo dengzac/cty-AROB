@@ -8,11 +8,11 @@ class PathPlanner(object):
         self.origPath = list(path)
         self.pathA= 0.7
         self.pathB=0.3
-        self.pathTolerance = 0.0000001
+        self.pathTolerance = 0
 
         self.velocityA = 0.1
         self.velocityB = 0.3
-        self.velocityTolerance = 0.0000001
+        self.velocityTolerance = 1
         self.heading = []
 
     def inject(self, orig, numToInject):
@@ -48,7 +48,7 @@ class PathPlanner(object):
         iter = 0
         while change >= tolerance:
             iter += 1
-            #print change
+            print 'change', change
             change = 0.0
             for i in range(1, len(path)-1):
                 for j in range(len(path[i])):
@@ -57,7 +57,7 @@ class PathPlanner(object):
                     #print i, j, newPath[i][j], val
                     #print "dx", abs(val - newPath[i][j]) 
                     change += abs(val - newPath[i][j])
-            if (iter > 0):
+            if (iter > 3):
                 break
         #print "smooth done", iter
         #print newPath
@@ -88,9 +88,10 @@ class PathPlanner(object):
         for i in range(1, len(smoothPath)):
             dx[i] = (smoothPath[i][0] - smoothPath[i-1][0])/float(timeStep)
             dy[i] = (smoothPath[i][1] - smoothPath[i-1][1])/float(timeStep)
+            print dx[i], dy[i]
             velocities[i][0] = velocities[i-1][0] + timeStep
             self.heading[i][0] = self.heading[i-1][0] + timeStep
-            velocities[i][1] = math.sqrt(dx[i]**2 + math.sqrt(dy[i]**2))
+            velocities[i][1] = math.sqrt(dx[i]**2 + dy[i]**2)
         return velocities
 
     def velocityFix(self, smoothVelocity, origVelocity, tolerance):
@@ -184,7 +185,7 @@ class PathPlanner(object):
 
             rightPath[i][0] = (trackWidth/2.0 * math.cos(gradient[i][1]  - math.pi/2.0)) + smoothPath[i][0] 
             rightPath[i][1] = (trackWidth/2.0 * math.sin(gradient[i][1]  - math.pi/2.0)) + smoothPath[i][1]
-            print leftPath[i], rightPath[i]
+            #print leftPath[i], rightPath[i]
             deg = ((gradient[i][1] * 180.0/math.pi+180)% 360) - 180
             gradient[i][1] = deg
 
@@ -202,9 +203,11 @@ def plot2d(arr):
         except:
             pass
     return (x, y)
-total_time = 8
+total_time = 20
 time_step = 0.1
-p = PathPlanner([[1,1], [5,1], [9, 12], [12, 9], [15, 6], [19, 12], [0,0]])
+#pathlist = [[1,1], [5,1], [9, 12], [12, 9], [15, 6], [19, 12], [0, 0]]
+pathlist = [[0, 0], [0, 100], [400, 100], [600, 0]]
+p = PathPlanner(pathlist) #[[0, 0], [0, 100], [400, 100], [600, 0]])
 nodeOnlyPath = p.onlyNodeWayPoints(p.origPath)
 print nodeOnlyPath
 inject = p.injectionCounter(len(nodeOnlyPath), total_time, time_step)
@@ -220,23 +223,41 @@ for i in range(len(inject)):
         print smoothPath
     else:
         smoothPath = p.inject(smoothPath, inject[i])
-        smoothPath = p.smoother(smoothPath, 0.1, 0.3, 0.0000001)
+        smoothPath = p.smoother(smoothPath, 0.1, 0.3, p.pathTolerance)
 
 
-print smoothPath
+#print smoothPath
 
 p.wheelSpeeds(smoothPath, 6)
+print p.leftPath
 
 leftVelocity = p.velocity(p.leftPath, time_step)
+origLeftVelocity = list(leftVelocity)
 leftVelocity[len(leftVelocity)-1][1] = 0
-#leftVelocity = p.smoother(leftVelocity,0.1, 0.3, 0.0000001 )
+leftVelocity = p.smoother(leftVelocity,0.1, 0.3, p.velocityTolerance)
+leftVelocity = p.velocityFix(leftVelocity, origLeftVelocity, p.velocityTolerance)
 print leftVelocity
 x = []
 y = []
 for i in leftVelocity:
     x.append(i[0])
     y.append(i[1])
-plt.plot(x, y)
+plt.scatter(x, y,color = "red")
+
+
+
+rightVelocity = p.velocity(p.rightPath, time_step)
+origRightVelocity = list(rightVelocity)
+rightVelocity[len(rightVelocity)-1][1] = 0
+rightVelocity = p.smoother(rightVelocity,0.1, 0.3,p.velocityTolerance )
+rightVelocity = p.velocityFix(rightVelocity, origRightVelocity,p.velocityTolerance)
+#print leftVelocity
+x = []
+y = []
+for i in rightVelocity:
+    x.append(i[0])
+    y.append(i[1])
+plt.scatter(x, y,color = "red")
 
 x = []
 y = []
@@ -250,20 +271,20 @@ y = []
 for i in p.leftPath:
     x.append(i[0])
     y.append(i[1])
-plt.plot(x, y, color="blue")
+plt.scatter(x, y, color="blue")
 
 x = []
 y = []
 for i in p.rightPath:
     x.append(i[0])
     y.append(i[1])
-plt.plot(x, y, color="red")
+plt.plot(x, y, color="blue")
 x = []
 y = []
-for i in [[1,1], [5,1], [9, 12], [12, 9], [15, 6], [19, 12],[0,0]]:
+for i in pathlist:
     x.append(i[0])
     y.append(i[1])
-#plt.plot(x, y, color="red")
+plt.plot(x, y, color="red")
 plt.tight_layout()
 print "save"
 plt.savefig("/home/zachary/path.png")
