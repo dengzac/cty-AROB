@@ -48,10 +48,11 @@ class Mapper(object):
         if (len(self.historyx)%15==0):
             pass #threading.Thread(target=self.plot).start()
 
-    def plot(self):
+    def plot(self, pointx, pointy):
         x = list(self.historyx)
         y = list(self.historyy)
         plt.plot(x, y, color="blue")
+        plt.scatter(list(pointx), list(pointy), color="red")
         plt.tight_layout()
         print "save"
         plt.savefig("/home/pi/Pictures/robot_position.png")
@@ -90,16 +91,17 @@ class Point(object):
         self.driveDone = False
 
     def drive_to_point(self):
-        x_distance = (self.mapper.x - self.dest_x)
-        y_distance = (self.mapper.y - self.dest_y)
+        print self.mapper.x, self.mapper.y
+        x_distance = -(self.mapper.x - self.dest_x)
+        y_distance = -(self.mapper.y - self.dest_y)
         print "dist", x_distance, y_distance
         target_angle = (((((math.atan2(y_distance, x_distance)) * 180/math.pi))+180)% 360) - 180
-        cur_angle = ((self.gyro.get_angle()+180)%360)-180
+        cur_angle = -(((self.gyro.get_angle()+180)%360)-180)
         print 'target', target_angle, 'cur', cur_angle
         error = PIDController.calc_angle_error(target_angle, cur_angle)
         print error
 
-        output = self.turnPID.run(error)
+        output = -self.turnPID.run(error)
         print output
         
         if (abs(output) < 10 and abs(error) < 10) or self.turnDone:
@@ -110,18 +112,19 @@ class Point(object):
             self.driver.turn_right(output, 0)
             return
         
-        total_dist = math.sqrt((x_distance * x_distance) + (y_distance * y_distance))
+        total_dist = -math.sqrt((x_distance * x_distance) + (y_distance * y_distance))
 
-        output = self.drivePID.run(total_dist)
+        output = -self.drivePID.run(total_dist)
         print "remain distance", total_dist, output
         self.driver.drive_straight(-output)
-        if abs(total_dist) < 30 and abs(output) < 10:
+        if abs(total_dist) < 500:
             print "+++++++++++++++++++++++++++++++++++++++++++++"
             self.driveDone = True 
 
     def step(self):
         self.drive_to_point()
         self.driver.step()
+
 
 class Driver(object):
     def __init__(self, left_motor, right_motor, gyro, axle_length = 3):
