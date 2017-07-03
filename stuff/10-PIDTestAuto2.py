@@ -47,6 +47,8 @@ class PathFollower(object):
         try:
             if self.follower == None or self.follower.driveDone:
                 self.follower = Point(self.points[self.current_index][0], self.points[self.current_index][1], self.driver, self.gyro, self.controller1, self.controller2, self.driver.mapper)
+                self.driver.mapper.x = self.points[self.current_index][0]
+                self.driver.mapper.y = self.points[self.current_index][1]
                 self.current_index += 1
             else:
                 self.follower.step()
