@@ -41,8 +41,8 @@ class Mapper(object):
             average = 0
         self.x -=  average* math.cos(angle*(math.pi/180.0))
         self.y -=  average*math.sin(angle*(math.pi/180.0))
-        self.historyx.append(self.x*0.87096774*.9)
-        self.historyy.append( self.y*0.87096774*.9)
+        self.historyx.append(self.x)
+        self.historyy.append( self.y)
         #print self.x*0.87096774*.9, self.y*0.87096774*.9, angle%360
 
         if (len(self.historyx)%15==0):
@@ -69,17 +69,18 @@ class Navigator(object):
         self.index = 0
         self.curPoint = None
 
+
     def step(self):
         if (self.curPoint != None):
             self.curPoint.step()
             if not self.curPoint.driveDone:
                 return
 
-        self.curPoint = Point(self.points[self.index][0], self.points[self.index][1], self.driver, self.gyro, self.turnPID, self.drivePID, self.mapper)
+        #self.curPoint = Point(self.points[self.index][0], self.points[self.index][1], self.driver, self.gyro, self.turnPID, self.drivePID, self.mapper)
         self.index += 1
 
 class Point(object):
-    def __init__(self, dest_x, dest_y, driver, gyro, turnPID, drivePID, mapper):
+    def __init__(self, dest_x, dest_y, driver, gyro, turnPID, drivePID, mapper, ultra):
         self.dest_x = dest_x
         self.dest_y = dest_y
         self.gyro = gyro
@@ -89,36 +90,72 @@ class Point(object):
         self.mapper = mapper
         self.turnDone = False
         self.driveDone = False
+        self.ultra = ultra
+        self.driveTimer = None
+        self.avoidTurn = False
 
     def drive_to_point(self):
-        print self.mapper.x, self.mapper.y
+        #print self.mapper.x, self.mapper.y
         x_distance = -(self.mapper.x - self.dest_x)
         y_distance = -(self.mapper.y - self.dest_y)
-        print "dist", x_distance, y_distance
+        #print "dist", x_distance, y_distance
         target_angle = (((((math.atan2(y_distance, x_distance)) * 180/math.pi))+180)% 360) - 180
         cur_angle = -(((self.gyro.get_angle()+180)%360)-180)
-        print 'target', target_angle, 'cur', cur_angle
+        #print 'target', target_angle, 'cur', cur_angle
         error = PIDController.calc_angle_error(target_angle, cur_angle)
-        print error
+        #print error
 
         output = -self.turnPID.run(error)
-        print output
+        #print output
         
-        if (abs(output) < 10 and abs(error) < 10) or self.turnDone:
+        if (abs(output) < 10 and abs(error) < 2) or self.turnDone:
             self.turnDone = True
-            print "-----------------------------------------------------------------"
+            #print "-----------------------------------------------------------------"
             
         else:
             self.driver.turn_right(output, 0)
             return
-        
+
+        # print "dist ultra", self.ultra.distanceUSEV3()  
+        # if(self.ultra.distanceUSEV3() < 250):
+        #     print "Distance too small"
+        #     print self.driveTimer
+        #     if self.driveTimer == None:
+        #         self.driveTimer = datetime.datetime.now()
+        #     print self.driveTimer
+        #     print (datetime.datetime.now() - self.driveTimer)
+        #     if (datetime.datetime.now() - self.driveTimer).total_seconds() < 0.1:
+        #         print "Turning"
+        #         if error < 0:
+
+        #             self.driver.drive_straight(0, 50)
+        #         else:
+        #             self.driver.drive_straight(0, -50)
+        #     else:
+        #         print "Done turning"
+        #         self.avoidTurn = True
+        #         self.driveTimer = datetime.datetime.now()
+        #     return
+        # elif self.avoidTurn:
+        #     if (datetime.datetime.now() - self.driveTimer).total_seconds() < 0.5:
+        #         print "Go forward"
+        #         self.driver.drive_straight(-50, 0)
+        #     else:
+        #         print "Done going forward"
+        #         self.avoidTurn = False
+        #         self.driveTimer = None
+        #     return
         total_dist = -math.sqrt((x_distance * x_distance) + (y_distance * y_distance))
 
-        output = -self.drivePID.run(total_dist)
-        print "remain distance", total_dist, output
-        self.driver.drive_straight(-output)
-        if abs(total_dist) < 500:
-            print "+++++++++++++++++++++++++++++++++++++++++++++"
+        output1 = -self.drivePID.run(total_dist)
+        #print "remain distance", total_dist, output1
+        if (abs(total_dist) < 300):
+            output = 0
+        self.driver.drive_straight(-output1, output)
+        #print "6969696969", output
+        if abs(total_dist) < 130:
+            print "+++++++++++++++++++++++++++++++++++++++++++++", total_dist, x_distance, y_distance, self.mapper.x, self.mapper.y
+            self.mapper.step()
             self.driveDone = True 
 
     def step(self):
@@ -140,10 +177,12 @@ class Driver(object):
         self.y = 0
         self.prev_time = datetime.datetime.now()
         self.mapper = Mapper(left_motor, right_motor, gyro)
+        self.turn = 0
 
-    def drive_straight(self, speed):
+    def drive_straight(self, speed, turn=0):
         self.speed = speed
         self.direction = 0
+        self.turn = turn
 
     def turn_left(self, speed, radius=0):
         self.speed = speed
@@ -155,10 +194,12 @@ class Driver(object):
         self.direction = 2
         self.radius = radius
 
+
     def drive(self):
         if self.direction == 0:
-            self.left_motor.setSpeed(self.speed)
-            self.right_motor.setSpeed(self.speed)
+            self.left_motor.setSpeed(self.speed + self.turn)
+            self.right_motor.setSpeed(self.speed - self.turn)
+            print self.turn
         elif self.direction == 1:
             print "turn left"
             # self.left_motor.setSpeed(self.speed)

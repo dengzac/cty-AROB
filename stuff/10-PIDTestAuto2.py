@@ -33,7 +33,7 @@ class Follower(object):
         else:
             return False
 class PathFollower(object):
-    def __init__(self, points , driver, gyro, controller1, controller2):
+    def __init__(self, points , driver, gyro, controller1, controller2, ultrasonic):
         self.points = points
         self.driver = driver
         self.gyro = gyro
@@ -42,13 +42,18 @@ class PathFollower(object):
         self.current_index = 0
         self.follower = None
         self.done = False
+        self.ultrasonic = ultrasonic
 
     def step (self):
         try:
             if self.follower == None or self.follower.driveDone:
-                self.follower = Point(self.points[self.current_index][0], self.points[self.current_index][1], self.driver, self.gyro, self.controller1, self.controller2, self.driver.mapper)
-                self.driver.mapper.x = self.points[self.current_index][0]
-                self.driver.mapper.y = self.points[self.current_index][1]
+                if (self.follower == None):
+                    pass
+                else:
+                    #self.driver.mapper.x = self.points[self.current_index-1][0]
+                    #self.driver.mapper.y = self.points[self.current_index-1][1] 
+                    pass
+                self.follower = Point(self.points[self.current_index][0], self.points[self.current_index][1], self.driver, self.gyro, self.controller1, self.controller2, self.driver.mapper, self.ultrasonic)
                 self.current_index += 1
             else:
                 self.follower.step()
@@ -58,21 +63,27 @@ class PathFollower(object):
             self.done = True
 
 gyro = Gyro(psm.BAS2)
+psm.BBM1.setSpeed(100)
 gyro.calibrate(1)
 print "Calibrate done error=", gyro.error_rate
-controller = PIDController(1.5, 0, 0.1)
-controller2 = PIDController(1, 0, 0.1)
+controller = PIDController(1, 0, 0.1)
+controller2 = PIDController(0.5, 0, 0.1)
 driver = Driver(psm.BAM1, psm.BAM2, gyro, 3)
-
-follower = PathFollower([[1000, 1000], [3700,1000],[6000,-100]],driver, gyro, controller, controller2)
-try:
-    while not follower.done:
-        follower.step()
-except:
-    psm.BAM1.setSpeed(0)
-    psm.BAM2.setSpeed(0)
+POINTS = [[1000, 1000], [3000,1000], [3000, -750],[1000, -750], [1000, 1100], [3000, 1120],[5000,0]]
+POINTSX = []
+POINTSY = []
+for i in POINTS:
+    POINTSX.append(i[0])
+    POINTSY.append(i[1])
+follower = PathFollower(POINTS,driver, gyro, controller, controller2 , psm.BAS1)
+#try:
+while not follower.done:
+    follower.step()
+#except:
+#   psm.BAM1.setSpeed(0)
+#   psm.BAM2.setSpeed(0)
 
 
 psm.BAM1.setSpeed(0)
 psm.BAM2.setSpeed(0)
-driver.mapper.plot([1000,3700,6000], [1000,1000,-100])
+driver.mapper.plot(POINTSX, POINTSY)
