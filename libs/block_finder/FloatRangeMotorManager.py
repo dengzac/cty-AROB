@@ -55,7 +55,7 @@ class DynManager(object):
         maxOne = max(abs(left),abs(right))
 
         if maxOne > 1:
-           # print("doin")
+            print("doin")
             left /= maxOne
             right/= maxOne
 

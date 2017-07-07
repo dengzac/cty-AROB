@@ -1,11 +1,4 @@
-first = 1
-second = 1
-sum = 0;
-
-print first
-print second
-for j in range(8):
-	sum = first + second
-	first = second
-	second = sum
-	print sum
+class Driver(object):
+    def __init__(self, left_motor, right_motor, axle_width):
+        self.left_motor = left_motor
+        self.r

@@ -1,9 +1,12 @@
 from PiStorms import PiStorms
+import time
 psm = PiStorms()
 
-psm.BAM1.runSecs(1, 100, True)
-psm.BAM2.runSecs(1, 100, True)
-while psm.BAM1.pos()<1990 and psm.BAM2.pos()<1990:
-	psm.screen.termPrintln(str(psm.BAM1.pos()) + '  ' + psm.BAM2.pos())
-	pass
+turnTime = .25
+def leftTurn(time1):
+	psm.BAM2.runSecs(time1, -100, True)
+	psm.BAM1.runSecs(time1, 100, True)
 
+def rightTurn(time1):
+	psm.BAM2.runSecs(time1, 100, True)
+	psm.BAM1

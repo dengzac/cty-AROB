@@ -1,24 +1,19 @@
+from PIDController import PIDController
+
 from PiStorms import PiStorms
 import time
-psm = PiStorms()
+from Gyro import Gyro
+from Driver import Driver
 
-turnTime = .25
-def leftTurn(time1):
-	psm.BAM2.runSecs(time1, -100, True)
-	psm.BAM1.runSecs(time1, 100, True)
+psm = PiStorms()     
 
-def rightTurn(time1):
-	psm.BAM2.runSecs(time1, 100, True)
-	psm.BAM1.runSecs(time1, -100, True)
-
-def driveStraight(time1):
-	psm.BAM1.runSecs(time1, 100, True)
-	psm.BAM2.runSecs(time1, 100, True)
-
-driveStraight(3)
-time.sleep(1)
-rightTurn(turnTime)
-time.sleep(1)
-driveStraight(3)
-time.sleep(1)
-leftTurn(turnTime)
+class Follower(object):
+    def __init__(self, controller, driver, ultrasonic):
+        self.controller = controller
+        self.driver = driver
+        self.ultrasonic = ultrasonic
+        self.output = 0
+    def get_error(self):
+        return 250 - self.ultrasonic.distanceUSEV3()
+    def follow(self):
+        error = s

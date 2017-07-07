@@ -1,24 +1,36 @@
-import datetime
-class SafeDriver(object):
-    def __init__(self, min_distance, driver, ultrasonic, reset_time):
-        self.driver = driver
-        self.min_distance = min_distance
-        self.ultrasonic = ultrasonic
-        self.reset_time = reset_time
 
-        self.prev_time = None
+class DynManager(object):
+    def __init__(self, left, right, wb):
+        self.left = left
+        self.right = right
 
-    def checkSafe(self):
-        return self.ultrasonic.distanceUSEV3() > self.min_distance
+        self.speed = 0
+        self.turn = 0
+        self.wheelOffset = wb/2.0
 
-    def tick(self):
-        if self.prev_time != None:
-            if float(-(self.prev_time - datetime.datetime.now()).total_seconds()) < self.reset_time:
-                return
-            else:
-                self.prev_time = None
-        if self.checkSafe():
-            self.driver.tick()
+    def setSpeed(self, speed):
+        if speed > 1:
+            self.speed = 1
+            return
+        elif speed < -1:
+            self.speed = -1
+            return
+        self.speed = speed
+
+    def setTurn(self, speed):
+        if speed > 1:
+            self.turn = 1
+            return
+        elif speed < -1:
+            self.turn = -1
+            return
+        self.turn = speed
+
+    def step(self):
+        if self.turn == 0:
+            left = self.speed
+            right = self.speed
         else:
-            self.driver.brake()
-            self.prev_time = datetime.datetime.now()
+            rc = (1.0/(abs(self.turn)**2) - 1)
+            if self.turn < 0:
+   
