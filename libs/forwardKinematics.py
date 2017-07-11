@@ -1,9 +1,9 @@
 import math
 import numpy as np
-#from PiStorms import PiStorms
+from PiStorms import PiStorms
 from PID import PIDController
 import time
-#psm = PiStorms()
+psm = PiStorms()
 #psm.BAM1.setSpeed(-100)
 #psm.BAM2.setSpeed(-100)
 #psm.BBM1.setSpeed(-100)
@@ -38,10 +38,9 @@ class Arm(object):
             psm.BBM1.setSpeed(output[2])
         else:
             psm.BBM1.brake()
-try:
-    arm = Arm()    
-except:
-    pass
+
+arm = Arm()    
+
 try:
     pass
     # while True:
