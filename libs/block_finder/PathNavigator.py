@@ -22,7 +22,7 @@ from MarcMapper import *
 from FloatRangeMotorManager import *
 from PiStorms import PiStorms
 import time
-
+from math import *
 
 class Pixy(object):
     def __init__(self):
@@ -64,7 +64,7 @@ class BlockFinder(object):
         return self.pixycam.getBlocks()
 
     def step(self):
-        self.drive()
+        return self.drive()
     def drive(self):
         ret = self.getBlocks()
         largestsize = 0
@@ -92,8 +92,8 @@ class BlockFinder(object):
         if abs(x_diff) < 30:
             print "done turning"
 
-            output2 = self.dPID.step(120 - blockheight)
-            if (abs(120-blockheight) < 30):
+            output2 = self.dPID.step(130 - blockheight)
+            if (abs(130-blockheight) < 30):
                 print "at target"
                 return True
             print "speed", output2
@@ -101,6 +101,9 @@ class BlockFinder(object):
             self.m.setTurn(0)
             self.m.step()
         else:
+            if (abs(130-blockheight) < 30):
+                print "at target"
+                return True
             self.m.setSpeed(output)
             self.m.setTurn(-1)
             m.step()
@@ -113,37 +116,110 @@ if __name__ == "__main__":
     from PointNavigator import PointNavigator
     from time import sleep
 
-    sleep(1)
-
-    psm = PiStorms()
-    rPID = PIDController(Kp=1, Ki=0, Kd=0.1, Scalar=1.4)
-    dPID = PIDController(Kp=1, Ki=0, Kd=0.15, Scalar=0.001)
-    r = Mapper(psm.BAM1, psm.BAM2, psm.BBS1, psm, True)
-    m = DynManager(psm.BAM1, psm.BAM2, 8.7)
-    p = PointNavigator(m, r, rPID, dPID)
-    PN = PathNavigator(p,[(700,550),(1500,550),(1500,-170),(700,-170),(-100,300)])
-    blockpoints = []
-    finder = BlockFinder(r, m)
-    timer = time.time()
-    while not psm.isKeyPressed():
-        blocks = finder.getBlocks()
-        print blocks
-        if len(blocks)==0 and ((time.time() - timer) > 5):
-            print "Follow path"
+    try:
+        blockFound = False
+        psm = PiStorms()
+        rPID = PIDController(Kp=1, Ki=0, Kd=0.1, Scalar=1.4)
+        dPID = PIDController(Kp=1, Ki=0, Kd=0.15, Scalar=0.001)
+        r = Mapper(psm.BAM1, psm.BAM2, psm.BBS1, psm, True)
+        m = DynManager(psm.BAM1, psm.BAM2, 8.7)
+        p = PointNavigator(m, r, rPID, dPID)
+        PN = PathNavigator(p,[(700,370),(1700,370),(1700,-300),(700,-300),(-100,300)])
+        timer = time.time()
+        while not psm.isKeyPressed():
             PN.step()
-            #sleep(0.02)
-        else:
-            if (len(blocks)>0):
-                timer = time.time()
-                print "Follow block"
-                if finder.step():
-                    blockpoints.append(r.getLocation())
-                    print blockpoints
-            else:
-                m.setSpeed(0)
-                m.step()
-        r.step()
-    p.manager.setSpeed(0)
-    p.manager.setTurn(0)
-    p.manager.step()
-    p.mapper.plotWithPoints(PN.points)
+            r.step()
+            # blocks = finder.getBlocks()
+            # print blocks
+            # obstaclefound = False
+            # redfound = False
+
+
+            
+            # yellowInView = False
+            # redInView = False
+
+            # r.step() # reckoner
+
+            # # find red and yellow
+            # for block in blocks:
+            #     if block.signature == 2:
+            #         yellowInView = True
+            #         yellowBlock = block
+            #         break
+            #     elif block.signature == 1:
+            #         redInView = True
+            #         redBlock = block
+            #         break
+
+            # if yellowInView:
+            #     # procedure
+            #     pass
+            # elif (redInView or (time.time() - timer) > 0.5) and not blockFound:
+            #     if redInView: #reset timer and only if it was an organize branch
+            #         timer = time.time()
+            #     print "Follow block"
+                
+            #     if finder.step(): # log point if we are in threshold for the block follower
+            #         blockPoints.append(r.getLocation())
+            #         blockFound = True
+
+            #         # backtrack with PathNav
+            #         PN.points = list(reversed(PN.points[:PN.pointsIndex]))
+            #         PN.points.append([0,0])
+            #         print "new path ",PN.points
+            #         PN.pointsIndex = 0
+            #     pass 
+            # else: # path procedure
+            #     PN.step()
+
+            # for i in blocks:
+            #     if i.signature != 2:
+            #         if i.signature==1:
+            #             redfound = True
+            #         continue
+
+            #     print "yellow block ", abs(160-i.x), i.height
+            #     if abs(160-i.x) < 100 and i.height > (75-abs(160-i.x)/1.5):
+            #         obstaclefound = True
+            # r.step()
+            # if obstaclefound:
+            #     orientation = radians(r.getHeading()) + (pi/4)
+            #     currentPos = r.getLocation()
+            #     avoidPoint = [currentPos[0] + 150*cos(orientation),currentPos[1] + 150*sin(orientation)]
+            #     print "avoidpoint\n\n\n\n\n\n\noaunteohuneoathuuteoah", avoidPoint
+            #     PN.points.insert(PN.pointsIndex, avoidPoint) 
+            #     PN.step()
+            # if blockFound or (not redfound and ((time.time() - timer) > 2)):
+            #     print "Follow path"
+            #     PN.step()
+            #     #sleep(0.02)
+            # else:
+            #     if (redfound):
+            #         timer = time.time()
+            #         print "Follow block"
+            #         a = finder.step()
+            #         print "Finder ", a
+            #         if a:
+            #             print "At block"
+            #             blockPoints.append(r.getLocation())
+            #             print "All points", blockPoints
+            #             blockFound = True
+
+            #             PN.points = list(reversed(PN.points[:PN.pointsIndex]))
+
+            #             PN.points.append([0,0])
+            #             print "new path ",PN.points
+            #             PN.pointsIndex = 0
+            #     else:
+            #         m.setSpeed(0)
+            #         m.step()
+            # r.step()
+        p.manager.setSpeed(0)
+        p.manager.setTurn(0)
+        p.manager.step()
+        p.mapper.plotWithPoints(blockPoints)
+    except KeyboardInterrupt:
+        m.setSpeed(0)
+        p.manager.step()
+        p.mapper.plotWithPoints(blockPoints)
